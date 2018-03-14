@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import division
 import sys
 from pyspark.sql import Row
 from pyspark.sql import SparkSession
@@ -67,7 +68,7 @@ def update_centroid_average():
 
 user_distinct = data.select('User_ID').distinct().rdd.map(lambda user: user['User_ID']).collect()
 
-K = 3
+K = 20
 
 clusters = [[]] * K
 random_initial_user = random.sample(user_distinct, K)
@@ -138,18 +139,20 @@ for index in range(0, K):
 	file.write("\n")
 file.close()
 
-for index in range(0, K):
-	cityA = data.select('User_ID', 'City_Category').distinct()\
-		.rdd.filter(lambda user: user['City_Category'] == 'A' and user['User_ID'] in clusters[index]).count()
-	perA = cityA / len(clusters[index])
-	cityB = data.select('User_ID', 'City_Category').distinct()\
-		.rdd.filter(lambda user: user['City_Category'] == 'B' and user['User_ID'] in clusters[index]).count()
-	perB = cityB / len(clusters[index])
-	cityC = data.select('User_ID', 'City_Category').distinct()\
-		.rdd.filter(lambda user: user['City_Category'] == 'C' and user['User_ID'] in clusters[index]).count()
-	perC = cityC / len(clusters[index])
+# column = 'City_Category'
+# values = ['A', 'B', 'C']
+# column = 'Stay_In_Current_City_Years'
+# values = ['0', '1', '2', '3', '4+']
+# column = 'Age'
+# values = ['0-17', '18-25', '26-35', '36-45', '46-50', '51-55', '55+']
+column = 'Occupation'
+values = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20']
 
-	print("Cluster " + str(index) + " size: " + str(len(clusters[index])))
-	print("A: " + str(cityA) + "/" + str(len(clusters[index])) + " = " + str(perA) + "%")
-	print("B: " + str(cityB) + "/" + str(len(clusters[index])) + " = " + str(perB) + "%")
-	print("C: " + str(cityC) + "/" + str(len(clusters[index])) + " = " + str(perC) + "%")
+for index in range(0, K):
+	cluster_size = len(clusters[index])
+	print("Cluster " + str(index) + " size: " + str(cluster_size))
+	for value in values:
+		quantity = data.select('User_ID', column).distinct()\
+			.rdd.filter(lambda user: user[column] == value and user['User_ID'] in clusters[index]).count()
+
+		print(value + ": " + str(quantity) + "/" + str(cluster_size) + " = " + str(quantity / cluster_size) + "%")
