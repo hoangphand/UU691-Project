@@ -10,7 +10,7 @@ import random
 import copy
 import math
 
-random_seed = 191
+random_seed = 1992
 random.seed(random_seed)
 
 def map_user_product_dict(user_product):
@@ -55,7 +55,7 @@ matrix_user_product_rdd = user_product.rdd.map(map_user_product_dict)
 matrix_user_product = matrix_user_product_rdd.collect()
 
 # Clustering based on number of cities K = 3
-K = 3
+K = 20
 clusters = [[]] * K
 random_initial_user = random.sample(user_distinct, K)
 
@@ -109,6 +109,10 @@ while centroid_vectors != last_centroid_vectors:
 			clusters[min_index] = []
 
 		clusters[min_index].append(user_vector['User_ID'])
+
+	for index in range(0, K):
+		cluster_size = len(clusters[index])
+		print("cluster " + str(index) + " size: " + str(cluster_size))
 	update_centroid_average()
 
 file = open("output_file", "w")
