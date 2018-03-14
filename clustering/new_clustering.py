@@ -1,8 +1,6 @@
 from __future__ import print_function
 import sys
 import pyspark.sql.functions as F
-from pyspark.ml.evaluation import RegressionEvaluator
-from pyspark.ml.recommendation import ALS
 from pyspark.sql import Row
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf
@@ -10,7 +8,7 @@ import random
 import copy
 import math
 
-random_seed = 1992
+random_seed = 191
 random.seed(random_seed)
 
 def map_user_product_dict(user_product):
