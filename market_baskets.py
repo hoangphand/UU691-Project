@@ -38,13 +38,13 @@ training = spark.read.csv("dataset/train.csv", header = "true")
 
 training = training.withColumn('Order_ID', udf_add_order_id('User_ID'))
 
-training.show()
+# training.show()
 
 basket_without_quantity = training.select('User_ID', 'Order_ID', 'Product_ID').distinct()\
-	.groupBy('User_ID', 'Order_ID').agg(F.collect_list('Product_ID').alias('Product_ID')).orderBy('User_ID', 'Order_ID')
-basket_without_quantity.show()
+	.groupBy('User_ID', 'Order_ID').agg(F.collect_list('Product_ID').alias('Product_ID'))#.orderBy('User_ID', 'Order_ID')
+# basket_without_quantity.show()
 
-basket_with_quantity = basket_without_quantity.withColumn('Quantity', udf_get_list_length('Product_ID')).orderBy('User_ID', 'Order_ID')
+basket_with_quantity = basket_without_quantity.withColumn('Quantity', udf_get_list_length('Product_ID')).orderBy(desc('Quantity'))
 basket_with_quantity.show()
 
 print(basket_with_quantity.count())
