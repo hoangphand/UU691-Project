@@ -8,7 +8,9 @@ from pyspark.sql.functions import lit
 from pyspark.sql.functions import grouping
 from pyspark.sql.functions import mean
 from pyspark.sql.functions import udf
+from pyspark.sql.functions import desc
 from pyspark.sql.functions import stddev
+from pyspark.ml.fpm import FPGrowth
 
 def get_list_length(list):
 	return len(list)
@@ -45,6 +47,18 @@ basket_without_quantity = training.select('User_ID', 'Order_ID', 'Product_ID').d
 # basket_without_quantity.show()
 
 basket_with_quantity = basket_without_quantity.withColumn('Quantity', udf_get_list_length('Product_ID')).orderBy(desc('Quantity'))
-basket_with_quantity.show()
+# basket_with_quantity.show()
 
-print(basket_with_quantity.count())
+min_support = 0.005
+min_confidence = 0.005
+
+fpGrowth = FPGrowth(itemsCol="Product_ID", minSupport=min_support, minConfidence=min_confidence)
+model = fpGrowth.fit(basket_with_quantity)
+
+# model.freqItemsets.show()
+tmp_df = spark.createDataFrame(model.freqItemsets.rdd.sortBy(lambda row: (len(row[0]), row[1]), ascending=False))
+
+tmp_df.show(15)
+
+print("frequent items count: " + str(tmp_df.count()))
+# print(basket_with_quantity.count())
