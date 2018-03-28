@@ -49,8 +49,8 @@ basket_without_quantity = training.select('User_ID', 'Order_ID', 'Product_ID').d
 basket_with_quantity = basket_without_quantity.withColumn('Quantity', udf_get_list_length('Product_ID')).orderBy(desc('Quantity'))
 # basket_with_quantity.show()
 
-min_support = 0.005
-min_confidence = 0.005
+min_support = 0.001
+min_confidence = 0.001
 
 fpGrowth = FPGrowth(itemsCol="Product_ID", minSupport=min_support, minConfidence=min_confidence)
 model = fpGrowth.fit(basket_with_quantity)
