@@ -8,6 +8,7 @@ from pyspark.sql.functions import lit
 from pyspark.sql.functions import grouping
 from pyspark.sql.functions import mean
 from pyspark.sql.functions import udf
+from pyspark.sql.functions import abs
 from pyspark.sql.functions import desc
 from pyspark.sql.functions import stddev
 from pyspark.ml.fpm import FPGrowth
@@ -49,15 +50,25 @@ basket_without_quantity = training.select('User_ID', 'Order_ID', 'Product_ID').d
 basket_with_quantity = basket_without_quantity.withColumn('Quantity', udf_get_list_length('Product_ID')).orderBy(desc('Quantity'))
 # basket_with_quantity.show()
 
-min_support = 0.001
-min_confidence = 0.001
+min_support = 0.0001
+min_confidence = 0.1
 
 fpGrowth = FPGrowth(itemsCol="Product_ID", minSupport=min_support, minConfidence=min_confidence)
 model = fpGrowth.fit(basket_with_quantity)
 
-# model.freqItemsets.show()
-tmp_df = spark.createDataFrame(model.freqItemsets.rdd.sortBy(lambda row: (len(row[0]), row[1]), ascending=False))
+def get_total_baskets():
+	return 78684
 
+udf_get_total_baskets = udf(get_total_baskets)
+
+frequent_itemsets = model.freqItemsets
+association_rules = model.associationRules
+join_df = association_rules.join(frequent_itemsets, frequent_itemsets.items == association_rules.consequent)
+join_df = join_df.withColumn('interest', abs(join_df.confidence - join_df.freq / udf_get_total_baskets()))
+# tmp_df = spark.createDataFrame(model.freqItemsets.rdd.sortBy(lambda row: (len(row[0]), row[1]), ascending=False))
+# tmp_df = spark.createDataFrame(model.associationRules.rdd.sortBy(lambda row: (len(row[0]), row[2]), ascending=False))
+
+tmp_df = spark.createDataFrame(join_df.rdd.sortBy(lambda row: (len(row[0]), row[5]), ascending=False))
 tmp_df.show(15)
 
 print("frequent items count: " + str(tmp_df.count()))

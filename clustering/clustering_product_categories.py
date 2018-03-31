@@ -75,25 +75,6 @@ random_initial_user = random.sample(user_distinct, K)
 
 centroid_vectors = matrix_user_vector_rdd.filter(lambda user: user['User_ID'] in random_initial_user).collect()
 
-for user_vector in matrix_user_vector:
-	current_min_distance = sys.maxsize
-	min_index = -1
-
-	for index in range(0, K):
-		current_distance = 0
-		for key in centroid_vectors[index]:
-			if key != 'User_ID':
-				current_distance += math.pow(abs(centroid_vectors[index][key] - user_vector[key]), 2)
-
-		if current_distance < current_min_distance:
-			current_min_distance = current_distance
-			min_index = index
-
-	if len(clusters[min_index]) == 0:
-		clusters[min_index] = []
-
-	clusters[min_index].append(user_vector['User_ID'])
-
 last_centroid_vectors = []
 
 iteration = 0
