@@ -43,7 +43,7 @@ Product = Row('Product_ID', 'Product_Category')
 
 # READER
 def map_group_by_product_file(line):
-	product_cate = line.value.split(';')[1].split(',')
+	product_cate = [int(i) for i in line.value.split(';')[1].split(',')]
 	return (line.value.split(';')[0], product_cate)
 
 group_by_product_file = spark.read.text("tmp_output_file/group_by_product.ouput").rdd

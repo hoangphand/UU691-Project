@@ -42,7 +42,7 @@ Product = Row('Product_ID', 'Product_Category')
 # READER
 Cate_Product = Row('Product_Category', 'Product_ID')
 def map_group_by_category_file(line):
-	cate = line.value.split(';')[0].split(',')
+	cate = [int(i) for i in line.value.split(';')[0].split(',')]
 	product = line.value.split(';')[1].split(',')
 	return (cate, product)
 
