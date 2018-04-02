@@ -48,7 +48,7 @@ def map_group_user_products_file(line):
 	products = []
 	for index in range(1, len(parts)):
 		products.append(parts[index].split(','))
-		return (user_id, products)
+	return (user_id, products)
 
 group_user_products_file = spark.read.text("tmp_output_file/group_user_products.ouput").rdd
 group_user_products = group_user_products_file.map(map_group_user_products_file)\
