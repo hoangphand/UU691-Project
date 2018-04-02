@@ -28,12 +28,15 @@ def map_demographic_cate_file(line):
 	gender = parts[0].split(',')[0]
 	age = parts[0].split(',')[1]
 	occupation = parts[0].split(',')[2]
+	marital_status = parts[0].split(',')[3]
+	duration_of_stay = parts[0].split(',')[4]
+	city = parts[0].split(',')[5]
 	for index in range(1, len(parts) - 1):
 		key = [int(i) for i in parts[index].split(':')[0].split(',')]
 		value = int(parts[index].split(':')[1])
 		result[tuple(key)] = int(value)
 
-	return (tuple((gender, age, occupation)), result)
+	return (tuple((gender, age, occupation, marital_status, duration_of_stay, city)), result)
 
 demographic_cate_file = spark.read.text("tmp_output_file/group_demographic_cate.ouput").rdd
 demographic_cate_rdd = demographic_cate_file.map(map_demographic_cate_file)
@@ -41,15 +44,15 @@ demographic_cate_dict = demographic_cate_rdd.collectAsMap()
 
 # GEN recommended products
 def map_collect_user_profile(user):
-	return (user['User_ID'], user['Gender'], user['Age'], user['Occupation'])
-User = Row('User_ID', 'Gender', 'Age', 'Occupation')
+	return (user['User_ID'], user['Gender'], user['Age'], user['Occupation'], user['Marital_Status'], user['Stay_In_Current_City_Years'], user['City_Category'])
+User = Row('User_ID', 'Gender', 'Age', 'Occupation', 'Marital_Status', 'Stay_In_Current_City_Years', 'City_Category')
 distinct_users = training.rdd.map(map_collect_user_profile).map(lambda user: User(*user)).distinct()
 
 no_of_cates = 6
 no_of_products_for_each_cate = 6
 
 def map_recommended_products(user):
-	key = tuple((user['Gender'], user['Age'], user['Occupation']))
+	key = tuple((user['Gender'], user['Age'], user['Occupation'], user['Marital_Status'], user['Stay_In_Current_City_Years'], user['City_Category']))
 	top_user_cates = sorted(demographic_cate_dict[key].iteritems(), key=operator.itemgetter(1), reverse=True)
 	user_recommended_products = []
 

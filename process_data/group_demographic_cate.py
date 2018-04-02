@@ -10,17 +10,19 @@ from pyspark.sql.functions import desc
 spark = SparkSession.builder.appName("demo-cluster").getOrCreate()
 
 # READ demographic users
-Demographic_User = Row('Gender', 'Age', 'Occupation', 'User_ID')
+Demographic_User = Row('Gender', 'Age', 'Occupation', 'Marital_Status', 'Stay_In_Current_City_Years', 'City_Category', 'User_ID')
 def map_group_demographic_users_file(line):
 	gender = line.value.split(';')[0].split(',')[0]
 	age = line.value.split(';')[0].split(',')[1]
 	occupation = line.value.split(';')[0].split(',')[2]
+	marital_status = line.value.split(';')[0].split(',')[3]
+	duration_of_stay = line.value.split(';')[0].split(',')[4]
+	city = line.value.split(';')[0].split(',')[5]
 	user_id = line.value.split(';')[1].split(',')
-	return (gender, age, occupation, user_id)
+	return (gender, age, occupation, marital_status, duration_of_stay, city, user_id)
 
 group_demographic_users_file = spark.read.text("tmp_output_file/group_demograhic_users.ouput").rdd
-group_demographic_users = group_demographic_users_file.map(map_group_demographic_users_file)\
-	.map(lambda row: Demographic_User(*row))
+group_demographic_users = group_demographic_users_file.map(map_group_demographic_users_file).map(lambda row: Demographic_User(*row))
 group_demographic_users = spark.createDataFrame(group_demographic_users)
 group_demographic_users.show()
 
@@ -57,7 +59,10 @@ def map_demographic_products(demographic):
 		for cate in result:
 			result[cate] += user_cate_dict[cate]
 
-	return (tuple((demographic['Gender'], demographic['Age'], demographic['Occupation'])), result)
+	return (tuple((demographic['Gender'], demographic['Age'], demographic['Occupation'], demographic['Marital_Status'], demographic['Stay_In_Current_City_Years'], demographic['City_Category'])), result)
+	# return (tuple((demographic['Gender'], demographic['Age'], demographic['Occupation'], demographic['Marital_Status'], demographic['Stay_In_Current_City_Years'])), result)
+	# return (tuple((demographic['Gender'], demographic['Age'], demographic['Occupation'], demographic['Marital_Status'])), result)
+	# return (tuple((demographic['Gender'], demographic['Age'], demographic['Occupation'])), result)
 
 group_demographic_cate_rdd = group_demographic_users.rdd.map(map_demographic_products)
 group_demographic_cate = group_demographic_cate_rdd.collect()
@@ -66,7 +71,10 @@ file = open("tmp_output_file/group_demographic_cate.ouput", 'w')
 for demographic in group_demographic_cate:
 	file.write(str(demographic[0][0]) + ",")
 	file.write(str(demographic[0][1]) + ",")
-	file.write(str(demographic[0][2]))
+	file.write(str(demographic[0][2]) + ",")
+	file.write(str(demographic[0][3]) + ",")
+	file.write(str(demographic[0][4]) + ",")
+	file.write(str(demographic[0][5]))
 	file.write(';')
 	keys = demographic[1].keys()
 	for index1 in range(0, len(keys)):
@@ -82,21 +90,22 @@ for demographic in group_demographic_cate:
 file.close()
 
 # READER
-def map_demographic_cate_file(line):
-	result = {}
-	parts = line.value.split(';')
-	gender = parts[0].split(',')[0]
-	age = parts[0].split(',')[1]
-	occupation = parts[0].split(',')[2]
-	for index in range(1, len(parts) - 1):
-		key = [int(i) for i in parts[index].split(':')[0].split(',')]
-		value = int(parts[index].split(':')[1])
-		result[tuple(key)] = int(value)
+# def map_demographic_cate_file(line):
+# 	result = {}
+# 	parts = line.value.split(';')
+# 	gender = parts[0].split(',')[0]
+# 	age = parts[0].split(',')[1]
+# 	occupation = parts[0].split(',')[2]
+# 	marital_status = parts[0].split(',')[3]
+# 	for index in range(1, len(parts) - 1):
+# 		key = [int(i) for i in parts[index].split(':')[0].split(',')]
+# 		value = int(parts[index].split(':')[1])
+# 		result[tuple(key)] = int(value)
 
-	return (tuple((gender, age, occupation)), result)
+# 	return (tuple((gender, age, occupation)), result)
 
-demographic_cate_file = spark.read.text("tmp_output_file/group_demographic_cate.ouput").rdd
-demographic_cate_rdd = demographic_cate_file.map(map_demographic_cate_file)
-# demographic_cate = demographic_cate_rdd.collect()
-demographic_cate_dict = demographic_cate_rdd.collectAsMap()
-print(demographic_cate_dict)
+# demographic_cate_file = spark.read.text("tmp_output_file/group_demographic_cate.ouput").rdd
+# demographic_cate_rdd = demographic_cate_file.map(map_demographic_cate_file)
+# # demographic_cate = demographic_cate_rdd.collect()
+# demographic_cate_dict = demographic_cate_rdd.collectAsMap()
+# print(demographic_cate_dict)
