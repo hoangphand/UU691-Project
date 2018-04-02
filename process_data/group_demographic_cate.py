@@ -66,7 +66,7 @@ file = open("tmp_output_file/group_demographic_cate.ouput", 'w')
 for demographic in group_demographic_cate:
 	file.write(str(demographic[0][0]) + ",")
 	file.write(str(demographic[0][1]) + ",")
-	file.write(str(demographic[0][2]) + ",")
+	file.write(str(demographic[0][2]))
 	file.write(';')
 	keys = demographic[1].keys()
 	for index1 in range(0, len(keys)):
@@ -80,3 +80,23 @@ for demographic in group_demographic_cate:
 			file.write(';')
 	file.write('\n')
 file.close()
+
+# READER
+def map_demographic_cate_file(line):
+	result = {}
+	parts = line.value.split(';')
+	gender = parts[0].split(',')[0]
+	age = parts[0].split(',')[1]
+	occupation = parts[0].split(',')[2]
+	for index in range(1, len(parts) - 1):
+		key = [int(i) for i in parts[index].split(':')[0].split(',')]
+		value = int(parts[index].split(':')[1])
+		result[tuple(key)] = int(value)
+
+	return (tuple((gender, age, occupation)), result)
+
+demographic_cate_file = spark.read.text("tmp_output_file/group_demographic_cate.ouput").rdd
+demographic_cate_rdd = demographic_cate_file.map(map_demographic_cate_file)
+# demographic_cate = demographic_cate_rdd.collect()
+demographic_cate_dict = demographic_cate_rdd.collectAsMap()
+print(demographic_cate_dict)
