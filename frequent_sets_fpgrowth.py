@@ -42,23 +42,47 @@ def get_total_baskets():
 
 udf_get_total_baskets = udf(get_total_baskets)
 
-frequent_itemsets = model.freqItemsets
-# file = open("tmp_output_file/frequent_itemsets.ouput", 'w')
-# for row in frequent_itemsets.collect():
-# 	items = row['items']
-# 	for index in range(0, len(items)):
-# 		file.write(str(items[index]))
-# 		if index != len(row['items']) - 1:
-# 			file.write(';')
-# 	file.write(':' + str(row['freq']))
-# 	file.write('\n')
-# file.close()
+# frequent_itemsets = model.freqItemsets
+frequent_itemsets = spark.createDataFrame(model.freqItemsets.rdd.sortBy(lambda row: (row[1]), ascending=False))
+frequent_itemsets.show()
+file = open("tmp_output_file/frequent_itemsets.ouput", 'w')
+for row in frequent_itemsets.collect():
+	items = row['items']
+	for index in range(0, len(items)):
+		file.write(str(items[index]))
+		if index != len(row['items']) - 1:
+			file.write(';')
+	file.write(':' + str(row['freq']))
+	file.write('\n')
+file.close()
 
 association_rules = model.associationRules
 
 join_df = association_rules.join(frequent_itemsets, frequent_itemsets.items == association_rules.consequent)
 join_df = join_df.withColumn('interest', abs(join_df.confidence - join_df.freq / udf_get_total_baskets()))
 join_df = spark.createDataFrame(join_df.rdd.sortBy(lambda row: (len(row[0]), row[5]), ascending=False))
-join_df = join_df.filter(join_df.interest > 0.5).show(15)
+join_df = join_df.filter(join_df.interest > 0.5)
+join_df.show()
+
+file = open("tmp_output_file/frequent_sets_cates_with_high_interest.ouput", 'w')
+for row in join_df.collect():
+	antecedent = row['antecedent']
+	consequent = row['consequent'][0][0]
+	confidence = row['confidence']
+	interest = row['interest']
+
+	for index1 in range(0, len(antecedent)):
+		el_set = antecedent[index1]
+		for index2 in range(0, len(el_set)):
+			file.write(str(el_set[index2]))
+			if index2 != len(el_set) - 1:
+				file.write(',')
+		if index1 != len(antecedent) - 1:
+			file.write(';')
+	file.write(':' + str(consequent))
+	file.write(':' + str(confidence))
+	file.write(':' + str(interest))
+	file.write('\n')
+file.close()
 
 print("frequent items count: " + str(join_df.count()))
