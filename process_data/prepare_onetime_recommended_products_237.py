@@ -58,8 +58,8 @@ def map_recommended_products(user):
 		if to_be_chosen == 0:
 			break
 		current_total += to_be_chosen
-		# user_recommended_products.extend(random.sample(group_by_category_dict[top_user_cates[count][0]], to_be_chosen))
-		for index in range(0, to_be_chosen):
+		user_recommended_products.extend(random.sample(group_by_category_dict[top_user_cates[count][0]], to_be_chosen / 2))
+		for index in range(0, to_be_chosen / 2):
 			user_recommended_products.append(group_by_category_dict[top_user_cates[count][0]][index])
 		count += 1
 
@@ -67,7 +67,7 @@ def map_recommended_products(user):
 
 recommended_products = user_product_matrix_rdd.map(map_recommended_products).collect()
 
-file = open("tmp_output_file/one_time_recommended_products_237_6x6_with_sorting.ouput", 'w')
+file = open("tmp_output_file/one_time_recommended_products_237_5x10_with_sorting.ouput", 'w')
 for row in recommended_products:
 	file.write(str(row[0]))
 	file.write(';')

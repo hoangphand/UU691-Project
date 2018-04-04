@@ -19,7 +19,7 @@ def map_recommended_cates_file(line):
 		cates.append(tuple([int(x) for x in parts[index].split(',')]))
 	return (user_id, cates)
 
-recommended_cates_file = spark.read.text("tmp_output_file/recommended_cates_237_5.ouput").rdd
+recommended_cates_file = spark.read.text("tmp_output_file/recommended_cates_237_6.ouput").rdd
 recommended_cates = recommended_cates_file.map(map_recommended_cates_file)
 recommended_cates_dict = recommended_cates.collectAsMap()
 # print(recommended_cates_dict)
