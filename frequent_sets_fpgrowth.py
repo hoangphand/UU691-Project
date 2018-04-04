@@ -19,39 +19,22 @@ def map_group_tx_with_order_id_set_cates_file(line):
 	set_of_cates = []
 	for index in range(2, len(line.value.split(';'))):
 		cates = tuple([int(x) for x in line.value.split(';')[index].split(',')])
-		# cates = str([int(x) for x in line.value.split(';')[index].split(',')])
-		# cates = [int(x) for x in line.value.split(';')[index].split(',')]
 		set_of_cates.append(cates)
-
 	set_of_cates = list(set(set_of_cates))
-	set_of_cates = [str(x) for x in set_of_cates]
-
+	set_of_cates = [list(x) for x in set_of_cates]
 	return (user_id, order_id, set_of_cates)
-
-# def convert_array_to_tuple(line):
-# 	result = []
-
-# 	for el in line:
-# 		result.append(tuple(el))
-
-# 	return result
-
-# udf_convert_array_to_tuple = udf(convert_array_to_tuple)
 
 Order_Cates = Row('User_ID', 'Order_ID', 'Category')
 group_tx_with_order_id_set_cates_file = spark.read.text("tmp_output_file/group_tx_with_order_id_set_cates.ouput").rdd
 group_tx_with_order_id_set_cates = group_tx_with_order_id_set_cates_file.map(map_group_tx_with_order_id_set_cates_file)\
 	.filter(lambda l: len(l) == 3).map(lambda order: Order_Cates(*order))
-# df = group_tx_with_order_id_set_cates.toDF()
 df = spark.createDataFrame(group_tx_with_order_id_set_cates)
-# df = df.withColumn("Converted_Category", udf_convert_array_to_tuple('Category'))
 df.show()
 
-min_support = 0.0001
+min_support = 0.01
 min_confidence = 0.1
 
 fpGrowth = FPGrowth(itemsCol="Category", minSupport=min_support, minConfidence=min_confidence)
-# fpGrowth = FPGrowth(itemsCol="Converted_Category", minSupport=min_support, minConfidence=min_confidence)
 model = fpGrowth.fit(df)
 
 def get_total_baskets():
@@ -60,10 +43,22 @@ def get_total_baskets():
 udf_get_total_baskets = udf(get_total_baskets)
 
 frequent_itemsets = model.freqItemsets
+# file = open("tmp_output_file/frequent_itemsets.ouput", 'w')
+# for row in frequent_itemsets.collect():
+# 	items = row['items']
+# 	for index in range(0, len(items)):
+# 		file.write(str(items[index]))
+# 		if index != len(row['items']) - 1:
+# 			file.write(';')
+# 	file.write(':' + str(row['freq']))
+# 	file.write('\n')
+# file.close()
+
 association_rules = model.associationRules
+
 join_df = association_rules.join(frequent_itemsets, frequent_itemsets.items == association_rules.consequent)
 join_df = join_df.withColumn('interest', abs(join_df.confidence - join_df.freq / udf_get_total_baskets()))
-# join_df = spark.createDataFrame(join_df.rdd.sortBy(lambda row: (len(row[0]), row[5]), ascending=False))
-join_df.show(15)
+join_df = spark.createDataFrame(join_df.rdd.sortBy(lambda row: (len(row[0]), row[5]), ascending=False))
+join_df = join_df.filter(join_df.interest > 0.5).show(15)
 
-print("frequent items count: " + str(tmp_df.count()))
+print("frequent items count: " + str(join_df.count()))
